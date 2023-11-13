@@ -1,0 +1,61 @@
+---
+- name: Server Upgrade to Oracle Linux 8 Playbook 
+  hosts: Servers
+  become: yes
+
+
+  tasks:
+    - name: Update All Packages 
+      ansible.builtin.yum:
+        name: "*"
+        state: latest 
+      register: update_result
+    
+    - name: Install Oracle linux 8 
+      ansible.builtin.yum:
+        name: Add list for download here 
+        state: present 
+
+    - name: Install the EPEL repository 
+      ansible.builtin.yum:
+        name: epel-release
+        state: present 
+      
+    - name: Removing conflicting Packages
+      - name: Description
+        ansible.builtin.package:
+          name:
+            - kernel-uek
+            - kernel-uek-devel
+          state: absent
+
+    - name: Perform a minimal system upgrade 
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+
+    - name: Clean up obsolate packages
+      ansible.builtin.package:
+        name: "{{item}}"
+        state: absent
+      loop:
+        - python2
+        - python36
+      when: "'python2' in yum_update_result|json_query('changed') or 'python36' in yum_update_result|json_query('changed')"
+
+    - name: Reboot the server if need
+      command: reboot
+      async: 0
+      poll: 0
+      when: "'Rebooting' in command_result.stdout"
+
+    - name: Wait for the server to come back online
+      wait_for_connection:
+        delay: 30
+        timeout: 300
+    
+      
+
+
+  
+    
